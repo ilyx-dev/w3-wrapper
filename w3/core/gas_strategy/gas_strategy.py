@@ -10,4 +10,3 @@ class GasStrategy:
     @abstractmethod
     async def calculate_gas(self) -> dict:
         pass
-

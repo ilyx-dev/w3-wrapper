@@ -1,33 +1,30 @@
 import statistics
-
 from ..gas_strategy.gas_strategy import GasStrategy
-
 
 class EIP1559GasStrategy(GasStrategy):
     async def calculate_gas(self) -> dict:
-        block = await self._w3.async_w3.eth.get_block('latest')
-        block_number = block['number']
-        latest_block_transaction_count = await self._w3.async_w3.eth.get_block_transaction_count(block_number)
+        block = await self._w3.async_w3.eth.get_block('latest', full_transactions=True)
+        transactions = block['transactions']
+
         max_fee_per_gas_list = []
         max_priority_fee_per_gas_list = []
-        for i in range(latest_block_transaction_count):
-            try:
-                transaction = await self._w3.async_w3.eth.get_transaction_by_block(block_number, i)
-                if 'maxPriorityFeePerGas' in transaction:
-                    max_priority_fee_per_gas_list.append(transaction['maxPriorityFeePerGas'])
-                if 'maxFeePerGas' in transaction:
-                    max_fee_per_gas_list.append(transaction['maxFeePerGas'])
-            except Exception:
-                continue
-        if not (max_priority_fee_per_gas_list or max_fee_per_gas_list):
+
+        for tx in transactions:
+            if 'maxPriorityFeePerGas' in tx and tx['maxPriorityFeePerGas'] is not None:
+                max_priority_fee_per_gas_list.append(tx['maxPriorityFeePerGas'])
+            if 'maxFeePerGas' in tx and tx['maxFeePerGas'] is not None:
+                max_fee_per_gas_list.append(tx['maxFeePerGas'])
+
+        if not max_priority_fee_per_gas_list and not max_fee_per_gas_list:
+            max_priority_fee = await self._w3.async_w3.eth.max_priority_fee
             return {
-                'maxFeePerGas': int(await self._w3.async_w3.eth.max_priority_fee),
-                'maxPriorityFeePerGas': int(await self._w3.async_w3.eth.max_priority_fee / 10)
+                'maxFeePerGas': int(max_priority_fee),
+                'maxPriorityFeePerGas': int(max_priority_fee / 10)
             }
         else:
-            max_priority_fee_per_gas_list.sort()
-            max_fee_per_gas_list.sort()
+            median_max_fee = int(statistics.median(max_fee_per_gas_list)) if max_fee_per_gas_list else 0
+            median_max_priority_fee = int(statistics.median(max_priority_fee_per_gas_list)) if max_priority_fee_per_gas_list else 0
             return {
-                'maxFeePerGas': int(statistics.median(max_fee_per_gas_list)),
-                'maxPriorityFeePerGas': int(statistics.median(max_priority_fee_per_gas_list))
+                'maxFeePerGas': median_max_fee,
+                'maxPriorityFeePerGas': median_max_priority_fee
             }
