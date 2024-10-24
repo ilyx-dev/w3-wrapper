@@ -101,7 +101,7 @@ class Transactions:
                 res = await self._wait_for_receipt(tx_hash)
 
                 if res.get('status') == 1:
-                    logger.info("Transaction successful with receipt: %s", res)
+                    logger.debug("Transaction successful with receipt: %s", res)
                     return res
                 else:
                     logger.error("Transaction failed with receipt: %s", res)

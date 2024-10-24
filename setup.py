@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='w3-wrapper',
-    version='0.2',
+    version='0.3',
     description='an object-oriented wrapper over the web3py library',
     author='ilyx',
     author_email='felinooper@gmail.com',
